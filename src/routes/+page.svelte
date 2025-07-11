@@ -5,9 +5,8 @@
        let task: string = '';
        let tasks: Task[] = [];
        let filter: 'all' | 'active' | 'completed' = 'all';
-       let editingIndex: number | null = null;
-       let editText: string = '';
 
+       // Load tasks from localStorage
        onMount(() => {
          if (browser) {
            const saved = localStorage.getItem('tasks');
@@ -15,12 +14,14 @@
          }
        });
 
+       // Save tasks to localStorage
        $: {
          if (browser) {
            localStorage.setItem('tasks', JSON.stringify(tasks));
          }
        }
 
+       // Filter tasks
        $: filteredTasks = tasks.filter(task => {
          if (filter === 'active') return !task.completed;
          if (filter === 'completed') return task.completed;
@@ -36,7 +37,7 @@
 
        function toggleTask(index: number) {
          tasks[index].completed = !tasks[index].completed;
-         tasks = tasks;
+         tasks = tasks; // Trigger reactivity
        }
 
        function removeTask(index: number) {
@@ -47,63 +48,61 @@
          tasks = tasks.filter(task => !task.completed);
        }
 
-       function startEditing(index: number) {
-         editingIndex = index;
-         editText = tasks[index].text;
-       }
-
-       function saveEdit() {
-         if (editingIndex !== null && editText.trim()) {
-           tasks[editingIndex].text = editText;
-           tasks = tasks;
-           editingIndex = null;
-           editText = '';
-         }
+       function deleteAll() {
+         tasks = [];
        }
      </script>
 
-     <div class="max-w-md mx-auto p-4">
-       <h1 class="text-2xl font-bold text-blue-600 mb-4">Todo App</h1>
-       <form on:submit|preventDefault={addTask} class="mb-4">
-         <input
-           type="text"
-           bind:value={task}
-           placeholder="Add a task"
-           class="border rounded p-2 w-full"
-         />
+     <div class="max-w-md mx-auto p-6 bg-white shadow-md rounded-lg">
+       <h1 class="text-3xl font-extrabold text-blue-700 mb-6 text-center">Todo App</h1>
+       <div class="mb-4 flex gap-2">
+         <form on:submit|preventDefault={addTask} class="flex-1 flex gap-2">
+           <input
+             type="text"
+             bind:value={task}
+             placeholder="Add a task"
+             class="border rounded p-2 flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+           />
+           <button
+             type="submit"
+             class="bg-blue-600 text-white px-4 py-2 rounded-md font-semibold tracking-wide hover:bg-blue-700 transition-colors shadow-sm"
+           >
+             Add
+           </button>
+         </form>
          <button
-           type="submit"
-           class="mt-2 bg-blue-500 text-white p-2 rounded hover:bg-blue-600"
+           class="bg-red-800 text-white px-4 py-2 rounded-md font-semibold tracking-wide hover:bg-red-900 transition-colors shadow-sm"
+           on:click={deleteAll}
          >
-           Add Task
+           Delete All
          </button>
-       </form>
-       <div class="mb-4">
+       </div>
+       <div class="mb-4 flex flex-wrap gap-2">
          <button
-           class="mr-2 px-2 py-1 {filter === 'all' ? 'bg-blue-500 text-white' : 'bg-gray-200'}"
+           class="{filter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'} px-3 py-1 rounded-md font-semibold tracking-wide hover:bg-blue-500 hover:text-white transition-colors shadow-sm"
            on:click={() => (filter = 'all')}
          >
            All
          </button>
          <button
-           class="mr-2 px-2 py-1 {filter === 'active' ? 'bg-blue-500 text-white' : 'bg-gray-200'}"
+           class="{filter === 'active' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'} px-3 py-1 rounded-md font-semibold tracking-wide hover:bg-blue-500 hover:text-white transition-colors shadow-sm"
            on:click={() => (filter = 'active')}
          >
            Active
          </button>
          <button
-           class="px-2 py-1 {filter === 'completed' ? 'bg-blue-500 text-white' : 'bg-gray-200'}"
+           class="{filter === 'completed' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'} px-3 py-1 rounded-md font-semibold tracking-wide hover:bg-blue-500 hover:text-white transition-colors shadow-sm"
            on:click={() => (filter = 'completed')}
          >
            Completed
          </button>
+         <button
+           class="bg-red-600 text-white px-3 py-1 rounded-md font-semibold tracking-wide hover:bg-red-700 transition-colors shadow-sm"
+           on:click={clearCompleted}
+         >
+           Clear Completed
+         </button>
        </div>
-       <button
-         class="mb-4 bg-red-500 text-white p-2 rounded hover:bg-red-600"
-         on:click={clearCompleted}
-       >
-         Clear Completed
-       </button>
        <ul class="space-y-2">
          {#each filteredTasks as task, index}
            <li class="flex justify-between items-center border p-2 rounded">
@@ -114,36 +113,16 @@
                  on:change={() => toggleTask(index)}
                  class="mr-2"
                />
-               {#if editingIndex === index}
-                 <input
-                   type="text"
-                   bind:value={editText}
-                   on:blur={saveEdit}
-                   on:keydown={e => e.key === 'Enter' && saveEdit()}
-                   class="border rounded p-1"
-                 />
-               {:else}
-                 <span class={task.completed ? 'line-through text-gray-500' : ''}>
-                   {task.text}
-                 </span>
-               {/if}
+               <span class={task.completed ? 'line-through text-gray-500' : ''}>
+                 {task.text}
+               </span>
              </div>
-             <div>
-               {#if editingIndex !== index}
-                 <button
-                   on:click={() => startEditing(index)}
-                   class="text-blue-500 hover:text-blue-700 mr-2"
-                 >
-                   Edit
-                 </button>
-               {/if}
-               <button
-                 on:click={() => removeTask(index)}
-                 class="text-red-500 hover:text-red-700"
-               >
-                 Delete
-               </button>
-             </div>
+             <button
+               on:click={() => removeTask(index)}
+               class="text-red-600 hover:text-red-800 font-semibold transition-colors"
+             >
+               Delete
+             </button>
            </li>
          {/each}
        </ul>
