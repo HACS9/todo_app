@@ -24,11 +24,16 @@
        }
 
        // Filter tasks
-       $: filteredTasks = tasks.filter(task => {
+       $: filteredTasks = tasks ? tasks.filter(task => {
          if (filter === 'active') return !task.completed;
          if (filter === 'completed') return task.completed;
          return true;
-       });
+       }) : [];
+
+       // Calculate task counts
+       $: totalTasks = tasks.length;
+       $: activeTasks = tasks.filter(task => !task.completed).length;
+       $: completedTasks = tasks.filter(task => task.completed).length;
 
        function addTask() {
          if (task.trim()) {
@@ -119,47 +124,52 @@
            Clear Completed
          </button>
        </div>
-       <ul class="space-y-2">
-         {#each filteredTasks as task, index}
-           <li class="flex justify-between items-center border p-2 rounded">
-             <div class="flex items-center flex-1">
-               <input
-                 type="checkbox"
-                 checked={task.completed}
-                 on:change={() => toggleTask(index)}
-                 class="mr-2"
-               />
-               {#if editingIndex === index}
+       <div class="mb-4 text-gray-600">
+         Total: {totalTasks} Active: {activeTasks} Completed: {completedTasks}
+       </div>
+       {#if filteredTasks}
+         <ul class="space-y-2">
+           {#each filteredTasks as task, index}
+             <li class="flex justify-between items-center border p-2 rounded hover:bg-gray-50 transition-colors">
+               <div class="flex items-center flex-1">
                  <input
-                   type="text"
-                   bind:value={editText}
-                   on:blur={saveEdit}
-                   on:keydown={e => e.key === 'Enter' && saveEdit()}
-                   class="border rounded p-2 flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   type="checkbox"
+                   checked={task.completed}
+                   on:change={() => toggleTask(index)}
+                   class="mr-2"
                  />
-               {:else}
-                 <span class={task.completed ? 'line-through text-gray-500' : ''}>
-                   {task.text}
-                 </span>
-               {/if}
-             </div>
-             <div class="flex gap-2">
-               {#if editingIndex !== index}
+                 {#if editingIndex === index}
+                   <input
+                     type="text"
+                     bind:value={editText}
+                     on:blur={saveEdit}
+                     on:keydown={e => e.key === 'Enter' && saveEdit()}
+                     class="border rounded p-2 flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   />
+                 {:else}
+                   <span class={task.completed ? 'line-through text-gray-500' : ''}>
+                     {task.text}
+                   </span>
+                 {/if}
+               </div>
+               <div class="flex gap-2">
+                 {#if editingIndex !== index}
+                   <button
+                     on:click={() => startEditing(index)}
+                     class="text-blue-600 hover:text-blue-800 font-semibold transition-colors"
+                   >
+                     Edit
+                   </button>
+                 {/if}
                  <button
-                   on:click={() => startEditing(index)}
-                   class="text-blue-600 hover:text-blue-800 font-semibold transition-colors"
+                   on:click={() => removeTask(index)}
+                   class="text-red-600 hover:text-red-800 font-semibold transition-colors"
                  >
-                   Edit
+                   Delete
                  </button>
-               {/if}
-               <button
-                 on:click={() => removeTask(index)}
-                 class="text-red-600 hover:text-red-800 font-semibold transition-colors"
-               >
-                 Delete
-               </button>
-             </div>
-           </li>
-         {/each}
-       </ul>
+               </div>
+             </li>
+           {/each}
+         </ul>
+       {/if}
      </div>
