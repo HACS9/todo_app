@@ -5,6 +5,8 @@
        let task: string = '';
        let tasks: Task[] = [];
        let filter: 'all' | 'active' | 'completed' = 'all';
+       let editingIndex: number | null = null;
+       let editText: string = '';
 
        // Load tasks from localStorage
        onMount(() => {
@@ -50,6 +52,20 @@
 
        function deleteAll() {
          tasks = [];
+       }
+
+       function startEditing(index: number) {
+         editingIndex = index;
+         editText = tasks[index].text;
+       }
+
+       function saveEdit() {
+         if (editingIndex !== null && editText.trim()) {
+           tasks[editingIndex].text = editText;
+           tasks = tasks; // Trigger reactivity
+           editingIndex = null;
+           editText = '';
+         }
        }
      </script>
 
@@ -106,23 +122,43 @@
        <ul class="space-y-2">
          {#each filteredTasks as task, index}
            <li class="flex justify-between items-center border p-2 rounded">
-             <div class="flex items-center">
+             <div class="flex items-center flex-1">
                <input
                  type="checkbox"
                  checked={task.completed}
                  on:change={() => toggleTask(index)}
                  class="mr-2"
                />
-               <span class={task.completed ? 'line-through text-gray-500' : ''}>
-                 {task.text}
-               </span>
+               {#if editingIndex === index}
+                 <input
+                   type="text"
+                   bind:value={editText}
+                   on:blur={saveEdit}
+                   on:keydown={e => e.key === 'Enter' && saveEdit()}
+                   class="border rounded p-2 flex-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                 />
+               {:else}
+                 <span class={task.completed ? 'line-through text-gray-500' : ''}>
+                   {task.text}
+                 </span>
+               {/if}
              </div>
-             <button
-               on:click={() => removeTask(index)}
-               class="text-red-600 hover:text-red-800 font-semibold transition-colors"
-             >
-               Delete
-             </button>
+             <div class="flex gap-2">
+               {#if editingIndex !== index}
+                 <button
+                   on:click={() => startEditing(index)}
+                   class="text-blue-600 hover:text-blue-800 font-semibold transition-colors"
+                 >
+                   Edit
+                 </button>
+               {/if}
+               <button
+                 on:click={() => removeTask(index)}
+                 class="text-red-600 hover:text-red-800 font-semibold transition-colors"
+               >
+                 Delete
+               </button>
+             </div>
            </li>
          {/each}
        </ul>
