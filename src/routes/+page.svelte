@@ -5,8 +5,9 @@
        let task: string = '';
        let tasks: Task[] = [];
        let filter: 'all' | 'active' | 'completed' = 'all';
+       let editingIndex: number | null = null;
+       let editText: string = '';
 
-       // Load tasks from localStorage
        onMount(() => {
          if (browser) {
            const saved = localStorage.getItem('tasks');
@@ -14,14 +15,12 @@
          }
        });
 
-       // Save tasks to localStorage
        $: {
          if (browser) {
            localStorage.setItem('tasks', JSON.stringify(tasks));
          }
        }
 
-       // Filter tasks
        $: filteredTasks = tasks.filter(task => {
          if (filter === 'active') return !task.completed;
          if (filter === 'completed') return task.completed;
@@ -37,7 +36,7 @@
 
        function toggleTask(index: number) {
          tasks[index].completed = !tasks[index].completed;
-         tasks = tasks; // Trigger reactivity
+         tasks = tasks;
        }
 
        function removeTask(index: number) {
@@ -46,6 +45,20 @@
 
        function clearCompleted() {
          tasks = tasks.filter(task => !task.completed);
+       }
+
+       function startEditing(index: number) {
+         editingIndex = index;
+         editText = tasks[index].text;
+       }
+
+       function saveEdit() {
+         if (editingIndex !== null && editText.trim()) {
+           tasks[editingIndex].text = editText;
+           tasks = tasks;
+           editingIndex = null;
+           editText = '';
+         }
        }
      </script>
 
@@ -101,16 +114,36 @@
                  on:change={() => toggleTask(index)}
                  class="mr-2"
                />
-               <span class={task.completed ? 'line-through text-gray-500' : ''}>
-                 {task.text}
-               </span>
+               {#if editingIndex === index}
+                 <input
+                   type="text"
+                   bind:value={editText}
+                   on:blur={saveEdit}
+                   on:keydown={e => e.key === 'Enter' && saveEdit()}
+                   class="border rounded p-1"
+                 />
+               {:else}
+                 <span class={task.completed ? 'line-through text-gray-500' : ''}>
+                   {task.text}
+                 </span>
+               {/if}
              </div>
-             <button
-               on:click={() => removeTask(index)}
-               class="text-red-500 hover:text-red-700"
-             >
-               Delete
-             </button>
+             <div>
+               {#if editingIndex !== index}
+                 <button
+                   on:click={() => startEditing(index)}
+                   class="text-blue-500 hover:text-blue-700 mr-2"
+                 >
+                   Edit
+                 </button>
+               {/if}
+               <button
+                 on:click={() => removeTask(index)}
+                 class="text-red-500 hover:text-red-700"
+               >
+                 Delete
+               </button>
+             </div>
            </li>
          {/each}
        </ul>
